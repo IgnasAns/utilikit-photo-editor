@@ -3,6 +3,9 @@ name: Utilikit web build
 # Reproduces upstream's release `web` job (craft-common-actions release.yml) without secrets,
 # signing or publishing. Manual only.
 on:
+  push:
+    branches: [utilikit]
+    paths: ['.github/workflows/utilikit-web.yml']
   workflow_dispatch:
 
 permissions:
@@ -11,6 +14,7 @@ permissions:
 jobs:
   web:
     name: Web (wasm)
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
