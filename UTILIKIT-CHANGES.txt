@@ -1,0 +1,26 @@
+UtiliKit Photo Editor: changes made to PhotoCraft
+=================================================
+
+UtiliKit Photo Editor is based on PhotoCraft (https://github.com/storytold/photocraft), an
+open-source project by the ArtCraft team and contributors, used under the MIT and Apache-2.0
+licences (LICENSE-MIT, LICENSE-APACHE, NOTICE, ATTRIBUTION.md). This is a modified version. It is
+not affiliated with or endorsed by the ArtCraft team.
+
+Base: PhotoCraft v0.23.1. Changes in this version (notice of modification, Apache-2.0 section 4b):
+
+- Product name shown to users is "UtiliKit Photo Editor": window and title bar, start screen,
+  About dialog, Help menu, browser page title, loading and error text, and status/error messages
+  that named the app. Crate names, internal identifiers, the CLI and the .pcraft file format are
+  unchanged.
+- The ArtCraft name, marks and links were removed from the interface. The title-bar and start-screen
+  mark is the UtiliKit mark (assets/utilikit/, our own artwork, not covered by the PhotoCraft
+  licence), also used as the web page icon.
+- Links: Discord, getartcraft.com, the tutorials link and the start screen's "Learn" tab were removed.
+  "Website" opens https://utilikit.eu/photo-editor/, "More free tools" opens https://utilikit.eu/,
+  "Report an Issue" opens https://utilikit.eu/photo-editor/#feedback, and one link
+  ("Open-source project (PhotoCraft)") opens the upstream repository.
+- The About dialog states that this is a modified version based on PhotoCraft.
+- Build (.github/workflows/utilikit-web.yml): translation rows that name PhotoCraft, ArtCraft or
+  Discord are dropped from the craft-i18n catalogs before the build, so those strings show in
+  (rebranded) English; the web site ships this file with the licences and notices, without
+  upstream's README.

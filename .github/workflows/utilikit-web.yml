@@ -51,6 +51,25 @@ jobs:
           echo "CRAFT_I18N_DIR=$GITHUB_WORKSPACE/craft-i18n" >> "$GITHUB_ENV"
           echo "CRAFT_I18N_REQUIRED=1" >> "$GITHUB_ENV"
 
+      - name: Drop upstream brand rows from the translations (UtiliKit build)
+        # Every catalog row that names PhotoCraft, ArtCraft or Discord, and the Help-link id rows,
+        # is removed, so those strings fall back to the (rebranded) English in the source.
+        run: |
+          set -euo pipefail
+          export LC_ALL=C.UTF-8
+          dropped=0
+          for f in craft-i18n/locales/*/*.tsv; do
+            before=$(wc -l < "$f")
+            awk -F'\t' '/^#/ || NF < 2 { print; next }
+              /PhotoCraft|ArtCraft|Discord|artcraft|discord/ { next }
+              $1 == "@id" && $2 ~ /^help\./ { next }
+              { print }' "$f" > "$f.tmp"
+            mv "$f.tmp" "$f"
+            dropped=$((dropped + before - $(wc -l < "$f")))
+          done
+          echo "dropped $dropped brand rows"
+          if grep -v '^#' craft-i18n/locales/*/*.tsv | grep -qE 'PhotoCraft|ArtCraft|Discord'; then echo "brand rows left"; exit 1; fi
+
       - name: Build and zip
         run: |
           export PHOTOCRAFT_BUILD_SHA="$GITHUB_SHA"
@@ -73,6 +92,11 @@ jobs:
           done
           rm -rf site-out dist/site.zip
           mkdir -p site-out
+          # UtiliKit build: ship the licences, notices and our change list; drop upstream's
+          # README and hosting notes (ArtCraft branding, not needed on the site).
+          cp UTILIKIT-CHANGES.txt "$site/"
+          rm -f "$site/README.md" "$site/HOSTING.md"
+          for f in LICENSE-MIT LICENSE-APACHE NOTICE ATTRIBUTION.md UTILIKIT-CHANGES.txt; do test -f "$site/$f"; done
           cp -R "$site/." site-out/
           (cd target/web-package && zip -qr9 "$GITHUB_WORKSPACE/dist/photocraft-web-fixed.zip" "$(basename "$site")")
           du -sh site-out; ls -l site-out/app | head -20; find site-out -name '*.part-*' -o -name '*_bg.wasm' | xargs ls -l

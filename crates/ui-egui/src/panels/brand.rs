@@ -7,7 +7,8 @@ use egui::{Color32, Context, Id, Rect, TextureHandle, TextureOptions, Ui, pos2};
 use photocraft_codecs::{ChannelLayout, SampleType};
 
 /// 128 px: sharp at 20 pt on a 3× display, and the mipmaps keep it clean at 1×.
-const ICON_PNG: &[u8] = include_bytes!("../../../../assets/app-icon/hicolor/128x128/apps/ai.storyteller.photocraft.png");
+/// UtiliKit build: the UtiliKit mark (`assets/utilikit/`) instead of the upstream app icon.
+const ICON_PNG: &[u8] = include_bytes!("../../../../assets/utilikit/utilikit-mark-128.png");
 
 /// The icon's pixels (one transparent pixel if it couldn't be decoded, which a test rules out).
 fn decode() -> egui::ColorImage {

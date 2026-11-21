@@ -82,7 +82,7 @@ fn build_limit_scope(limit: BuildMemoryLimit) -> String {
         BuildMemoryLimit::Desktop32Bit => format!(
             " on this machine. This 32-bit build of PhotoCraft can use at most 2 GiB of memory for a file, or less if the computer has less memory free. The 64-bit build may be able to open it: download it from {releases}"
         ),
-        BuildMemoryLimit::FixedWeb => format!(" of the browser version of PhotoCraft. To open it, download the desktop app from {releases}"),
+        BuildMemoryLimit::FixedWeb => format!(" of UtiliKit Photo Editor in the browser. The desktop version of PhotoCraft, the open-source project it is based on, may open it: {releases}"),
     }
 }
 
@@ -195,7 +195,7 @@ mod tests {
         );
         assert_eq!(
             build_limit_scope(BuildMemoryLimit::FixedWeb),
-            format!(" of the browser version of PhotoCraft. To open it, download the desktop app from {releases}")
+            format!(" of UtiliKit Photo Editor in the browser. The desktop version of PhotoCraft, the open-source project it is based on, may open it: {releases}")
         );
     }
 
