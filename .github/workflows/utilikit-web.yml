@@ -1,0 +1,89 @@
+name: Utilikit web build
+
+# Reproduces upstream's release `web` job (craft-common-actions release.yml) without secrets,
+# signing or publishing. Manual only.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Web (wasm)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      RUST_BACKTRACE: 1
+      TRUNK_VERSION: "0.21.14"
+      TRUNK_SHA256: "f2b4680cd239693a646a2795e4633c625328d7b2a044fbe749fa3a2fe9e7036b"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust (latest stable, wasm32 target), as upstream releases do
+        run: |
+          rustup toolchain install stable --profile minimal --target wasm32-unknown-unknown
+          rustup default stable
+          rustc --version
+
+      - name: Install Trunk
+        run: |
+          url="https://github.com/trunk-rs/trunk/releases/download/v${TRUNK_VERSION}/trunk-x86_64-unknown-linux-gnu.tar.gz"
+          curl --proto '=https' --proto-redir =https -fsSL -o "$RUNNER_TEMP/trunk.tar.gz" "$url"
+          echo "$TRUNK_SHA256  $RUNNER_TEMP/trunk.tar.gz" | sha256sum -c -
+          mkdir -p "$HOME/.cargo/bin"
+          tar -xz -C "$HOME/.cargo/bin" -f "$RUNNER_TEMP/trunk.tar.gz" trunk
+          trunk --version
+
+      - name: Check out craft-i18n at the pinned revision
+        run: |
+          rev=$(tr -d '[:space:]' < craft-i18n.rev)
+          [[ "$rev" =~ ^[0-9a-f]{40}$ ]]
+          mkdir craft-i18n
+          git -C craft-i18n init -q
+          git -C craft-i18n fetch -q --depth 1 https://github.com/storytold/craft-i18n.git "$rev"
+          git -C craft-i18n checkout -q FETCH_HEAD
+          test -d craft-i18n/locales
+          echo "CRAFT_I18N_DIR=$GITHUB_WORKSPACE/craft-i18n" >> "$GITHUB_ENV"
+          echo "CRAFT_I18N_REQUIRED=1" >> "$GITHUB_ENV"
+
+      - name: Build and zip
+        run: |
+          export PHOTOCRAFT_BUILD_SHA="$GITHUB_SHA"
+          export PHOTOCRAFT_BUILD_DATE="$(date -u +%Y-%m-%d)"
+          packaging/web/package.sh
+
+      - name: Make the app's snippets/ import resolve
+        # package.sh copies the app glue to app/photocraft-web.js but not the dist/web/snippets/
+        # folder that glue imports (./snippets/...), so the app 404s until it sits in app/.
+        run: |
+          set -euo pipefail
+          site=$(echo target/web-package/photocraft-web-*)
+          test -d "$site/app"
+          if [ -d dist/web/snippets ]; then
+            mkdir -p "$site/app/snippets"
+            cp -R dist/web/snippets/. "$site/app/snippets/"
+          fi
+          for f in $(grep -ho 'snippets/[^"'"'"']*' "$site/app/photocraft-web.js" | sort -u); do
+            test -f "$site/app/$f" || { echo "missing $f in app/"; exit 1; }
+          done
+          rm -rf site-out dist/site.zip
+          mkdir -p site-out
+          cp -R "$site/." site-out/
+          (cd target/web-package && zip -qr9 "$GITHUB_WORKSPACE/dist/photocraft-web-fixed.zip" "$(basename "$site")")
+          du -sh site-out; ls -l site-out/app | head -20; find site-out -name '*.part-*' -o -name '*_bg.wasm' | xargs ls -l
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site
+          path: site-out
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site-zip
+          path: dist/photocraft-web-fixed.zip
+          if-no-files-found: error
